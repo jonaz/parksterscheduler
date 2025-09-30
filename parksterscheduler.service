@@ -1,0 +1,42 @@
+#
+# sudo useradd -r -s /bin/false parksterscheduler
+# sudo mkdir -p /opt/parksterscheduler
+# sudo chown parksterscheduler:parksterscheduler /opt/parksterscheduler/config.env
+# sudo chmod 600 /opt/parksterscheduler/config.env
+#
+[Unit]
+Description=Parkster Car Changer Service
+# Ensures the network is fully available before starting
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+# The user and group that will run the service
+User=parksterscheduler
+Group=parksterscheduler
+
+# The type of service
+Type=simple
+
+# The working directory for the binary and schedule.json
+WorkingDirectory=/opt/parksterscheduler
+
+# Load credentials from the separate, secured file
+EnvironmentFile=/opt/parksterscheduler/config.env
+
+# The command to start the service
+# It uses the environment variables loaded from the file above
+ExecStart=/opt/parksterscheduler/parksterscheduler \
+    -username="${PARKSTER_USERNAME}" \
+    -password="${PARKSTER_PASSWORD}" \
+    -schedule="schedule.json" \
+    -pushover-api-key="${PUSHOVER_API_KEY}" \
+    -pushover-user-key="${PUSHOVER_USER_KEY}"
+
+# Automatically restart the service if it fails
+Restart=on-failure
+RestartSec=10s
+
+[Install]
+# Enable the service to start at boot
+WantedBy=multi-user.target
