@@ -1,8 +1,8 @@
 #
 # sudo useradd -r -s /bin/false parksterscheduler
-# sudo mkdir -p /opt/parksterscheduler
-# sudo chown parksterscheduler:parksterscheduler /opt/parksterscheduler/config.env
-# sudo chmod 600 /opt/parksterscheduler/config.env
+# sudo mkdir -p /opt/parksterscheduler/tls
+# sudo chown -R parksterscheduler:parksterscheduler /opt/parksterscheduler
+# sudo chmod 600 /opt/parksterscheduler/config.env /opt/parksterscheduler/config.json /opt/parksterscheduler/tls/server.key
 #
 [Unit]
 Description=Parkster Car Changer Service
@@ -18,20 +18,16 @@ Group=parksterscheduler
 # The type of service
 Type=simple
 
-# The working directory for the binary and schedule.json
+# The working directory for the binary and config.json
 WorkingDirectory=/opt/parksterscheduler
 
-# Load credentials from the separate, secured file
+# Creates /var/lib/parksterscheduler for statePath (last known Tesla state)
+StateDirectory=parksterscheduler
+
+# Credentials only; everything else is in config.json
 EnvironmentFile=/opt/parksterscheduler/config.env
 
-# The command to start the service
-# It uses the environment variables loaded from the file above
-ExecStart=/opt/parksterscheduler/parksterscheduler \
-    -username="${PARKSTER_USERNAME}" \
-    -password="${PARKSTER_PASSWORD}" \
-    -schedule="schedule.json" \
-    -pushover-api-key="${PUSHOVER_API_KEY}" \
-    -pushover-user-key="${PUSHOVER_USER_KEY}"
+ExecStart=/opt/parksterscheduler/parksterscheduler -config /opt/parksterscheduler/config.json
 
 # Automatically restart the service if it fails
 Restart=on-failure
