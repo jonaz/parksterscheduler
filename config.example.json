@@ -1,6 +1,6 @@
 {
   "teslaPlate": "ABC123",
-  "zoePlate": "XYZ789",
+  "defaultPlate": "XYZ789",
   "teslaVins": ["5YJ3E7EB0KF000000"],
   "work": { "lat": 59.334591, "lon": 18.063240, "radiusM": 250 },
   "telemetry": {

@@ -7,12 +7,12 @@ The Tesla streams its location and gear to this service with
 The Tesla is driven by more than one person, so only a Tesla **parked at your
 work** counts. On workdays:
 
-- From `morningStart` (05:00) the **Zoe** is on the permit.
+- From `morningStart` (05:00) the **default car** (`defaultPlate`, the Zoe) is on the permit.
 - When the Tesla is **parked** (not in D/R/N) within `work.radiusM` of your work
   parking, the permit switches to the **Tesla**, a few seconds after parking.
   Driving past your work does not count.
 - If the Tesla leaves work again before `morningEnd` (10:00), the permit goes
-  back to the Zoe. After `morningEnd` it never switches back from the Tesla
+  back to the default car. After `morningEnd` it never switches back from the Tesla
   the same day, so driving home does not change anything.
 - If no telemetry has arrived for `telemetryStale` (72h), the
   `fallbackSchedule` is used and a Pushover warning is sent.

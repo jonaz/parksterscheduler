@@ -59,7 +59,7 @@ func main() {
 				log.Fatalf("❌ Telemetry server stopped: %v", err)
 			}
 		}()
-		log.Printf("🚗 Tesla (%s) when it is parked at work, otherwise Zoe (%s).", cfg.TeslaPlate, cfg.ZoePlate)
+		log.Printf("🚗 Tesla (%s) when it is parked at work, otherwise the default car (%s).", cfg.TeslaPlate, cfg.DefaultPlate)
 	} else {
 		log.Println("🗓️ teslaVins not set: using fallbackSchedule only.")
 	}

@@ -21,7 +21,7 @@ type Config struct {
 
 	// From the JSON config file.
 	TeslaPlate       string
-	ZoePlate         string
+	DefaultPlate     string
 	TeslaVINs        map[string]bool
 	Work             Geofence
 	TelemetryListen  string
@@ -33,7 +33,7 @@ type Config struct {
 	StatePath        string
 	Workdays         map[time.Weekday]bool
 	MorningStart     time.Duration // time of day when the daily decision starts
-	MorningEnd       time.Duration // after this, never switch Tesla -> Zoe the same day
+	MorningEnd       time.Duration // after this, never switch Tesla -> default car the same day
 	TelemetryStale   time.Duration // no telemetry for this long => fall back to schedule
 	Location         *time.Location
 	FallbackSchedule Schedule
@@ -48,10 +48,10 @@ func (c *Config) TelemetryEnabled() bool {
 
 // fileConfig is the JSON config file. Optional fields have defaults.
 type fileConfig struct {
-	TeslaPlate string   `json:"teslaPlate"`
-	ZoePlate   string   `json:"zoePlate"`
-	TeslaVINs  []string `json:"teslaVins"`
-	Work       *struct {
+	TeslaPlate   string   `json:"teslaPlate"`
+	DefaultPlate string   `json:"defaultPlate"`
+	TeslaVINs    []string `json:"teslaVins"`
+	Work         *struct {
 		Lat     *float64 `json:"lat"`
 		Lon     *float64 `json:"lon"`
 		RadiusM float64  `json:"radiusM"`
@@ -144,7 +144,7 @@ func (c *Config) applyFile(raw []byte) error {
 		c.FallbackSchedule[d.String()] = plate
 	}
 
-	c.TeslaPlate, c.ZoePlate = f.TeslaPlate, f.ZoePlate
+	c.TeslaPlate, c.DefaultPlate = f.TeslaPlate, f.DefaultPlate
 	c.TeslaVINs = map[string]bool{}
 	for _, v := range f.TeslaVINs {
 		if v = strings.ToUpper(strings.TrimSpace(v)); v != "" {
@@ -167,8 +167,8 @@ func (c *Config) applyFile(raw []byte) error {
 		return nil
 	}
 
-	if c.TeslaPlate == "" || c.ZoePlate == "" {
-		return fmt.Errorf("teslaPlate and zoePlate are required when teslaVins is set")
+	if c.TeslaPlate == "" || c.DefaultPlate == "" {
+		return fmt.Errorf("teslaPlate and defaultPlate are required when teslaVins is set")
 	}
 	if f.Work == nil || f.Work.Lat == nil || f.Work.Lon == nil {
 		return fmt.Errorf("work.lat and work.lon are required when teslaVins is set")

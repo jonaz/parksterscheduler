@@ -96,7 +96,7 @@ func (c *Controller) Decide(now time.Time) (d Decision, ok bool) {
 	if !st.LocationAt.IsZero() && parked && c.cfg.Work.Contains(st.Lat, st.Lon) {
 		return Decision{c.cfg.TeslaPlate, "Tesla is parked at work"}, true
 	}
-	return Decision{c.cfg.ZoePlate, "Tesla is not parked at work"}, true
+	return Decision{c.cfg.DefaultPlate, "Tesla is not parked at work"}, true
 }
 
 func (c *Controller) fromSchedule(local time.Time, reason string) (Decision, bool) {
@@ -120,10 +120,10 @@ func (c *Controller) Evaluate() {
 	if c.confirmedDay == day && strings.EqualFold(c.confirmedPlate, d.Plate) {
 		return
 	}
-	// Late in the day, never switch back from the Tesla to the Zoe: the Tesla
+	// Late in the day, never switch back from the Tesla to the default car: the Tesla
 	// was parked at work earlier and has just left (lunch, or driving home).
 	if c.confirmedDay == day && c.cfg.TelemetryEnabled() &&
-		strings.EqualFold(c.confirmedPlate, c.cfg.TeslaPlate) && strings.EqualFold(d.Plate, c.cfg.ZoePlate) &&
+		strings.EqualFold(c.confirmedPlate, c.cfg.TeslaPlate) && strings.EqualFold(d.Plate, c.cfg.DefaultPlate) &&
 		timeOfDay(local) >= c.cfg.MorningEnd {
 		return
 	}

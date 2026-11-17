@@ -25,7 +25,7 @@ func TestExampleConfigLoads(t *testing.T) {
 func TestConfigDefaults(t *testing.T) {
 	c := &Config{}
 	err := c.applyFile([]byte(`{
-		"teslaPlate": "A", "zoePlate": "B", "teslaVins": ["vin1"],
+		"teslaPlate": "A", "defaultPlate": "B", "teslaVins": ["vin1"],
 		"work": {"lat": 59.3, "lon": 18.0},
 		"telemetry": {"tlsCert": "c", "tlsKey": "k"}
 	}`))
@@ -53,11 +53,11 @@ func TestConfigErrors(t *testing.T) {
 	for name, tc := range map[string]struct{ json, want string }{
 		"typo":         {`{"teslaPlates": "A"}`, "unknown field"},
 		"empty":        {`{}`, "teslaVins"},
-		"no work":      {`{"teslaPlate": "A", "zoePlate": "B", "teslaVins": ["V"]}`, "work.lat"},
+		"no work":      {`{"teslaPlate": "A", "defaultPlate": "B", "teslaVins": ["V"]}`, "work.lat"},
 		"no plates":    {`{"teslaVins": ["V"], "work": {"lat": 1, "lon": 2}}`, "teslaPlate"},
 		"bad weekday":  {`{"fallbackSchedule": {"Funday": "A"}}`, "Funday"},
-		"bad lat":      {`{"teslaPlate": "A", "zoePlate": "B", "teslaVins": ["V"], "work": {"lat": 91, "lon": 2}, "telemetry": {"tlsCert": "c", "tlsKey": "k"}}`, "out of range"},
-		"no tls":       {`{"teslaPlate": "A", "zoePlate": "B", "teslaVins": ["V"], "work": {"lat": 1, "lon": 2}}`, "tlsCert"},
+		"bad lat":      {`{"teslaPlate": "A", "defaultPlate": "B", "teslaVins": ["V"], "work": {"lat": 91, "lon": 2}, "telemetry": {"tlsCert": "c", "tlsKey": "k"}}`, "out of range"},
+		"no tls":       {`{"teslaPlate": "A", "defaultPlate": "B", "teslaVins": ["V"], "work": {"lat": 1, "lon": 2}}`, "tlsCert"},
 		"bad duration": {`{"telemetryStale": "3 days", "fallbackSchedule": {"Mon": "A"}}`, "telemetryStale"},
 	} {
 		t.Run(name, func(t *testing.T) {

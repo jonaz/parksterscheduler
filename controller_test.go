@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	teslaPlate = "TES111"
-	zoePlate   = "ZOE222"
+	teslaPlate   = "TES111"
+	defaultPlate = "DEF222"
 )
 
 var (
@@ -47,7 +47,7 @@ func testConfig(t *testing.T) *Config {
 	}
 	wd, _ := parseWorkdays(nil)
 	return &Config{
-		TeslaPlate: teslaPlate, ZoePlate: zoePlate,
+		TeslaPlate: teslaPlate, DefaultPlate: defaultPlate,
 		TeslaVINs:      map[string]bool{"VIN1": true},
 		Work:           work,
 		Workdays:       wd,
@@ -104,11 +104,11 @@ func (h *harness) want(t *testing.T, plate, when string) {
 	}
 }
 
-func TestZoeDefaultWhenTeslaIsNotAtWork(t *testing.T) {
+func TestDefaultWhenTeslaIsNotAtWork(t *testing.T) {
 	h := newHarness(t)
 	h.report(t, at("04:00"), home, "P")
 	h.evalAt(at("05:00"))
-	h.want(t, zoePlate, "05:00")
+	h.want(t, defaultPlate, "05:00")
 	if len(h.notify.infos) != 1 {
 		t.Fatalf("want one change notification, got %v", h.notify.infos)
 	}
@@ -120,7 +120,7 @@ func TestZoeDefaultWhenTeslaIsNotAtWork(t *testing.T) {
 	}
 }
 
-func TestTeslaDrivenElsewhereKeepsZoe(t *testing.T) {
+func TestTeslaDrivenElsewhereKeepsDefault(t *testing.T) {
 	h := newHarness(t)
 	h.report(t, at("04:00"), home, "P")
 	h.evalAt(at("05:00"))
@@ -128,16 +128,16 @@ func TestTeslaDrivenElsewhereKeepsZoe(t *testing.T) {
 	h.evalAt(at("07:30"))
 	h.report(t, at("07:50"), elsewhere, "P")
 	h.evalAt(at("07:50"))
-	h.want(t, zoePlate, "Tesla parked at the other driver's work")
+	h.want(t, defaultPlate, "Tesla parked at the other driver's work")
 }
 
-func TestTeslaDrivingPastWorkKeepsZoe(t *testing.T) {
+func TestTeslaDrivingPastWorkKeepsDefault(t *testing.T) {
 	h := newHarness(t)
 	h.report(t, at("04:00"), home, "P")
 	h.evalAt(at("05:00"))
 	h.report(t, at("07:40"), work, "D")
 	h.evalAt(at("07:40"))
-	h.want(t, zoePlate, "Tesla driving past work")
+	h.want(t, defaultPlate, "Tesla driving past work")
 }
 
 func TestTeslaParkedAtWork(t *testing.T) {
@@ -153,7 +153,7 @@ func TestTeslaParkedAtWork(t *testing.T) {
 
 func TestTeslaParkedAtWorkOvernight(t *testing.T) {
 	h := newHarness(t)
-	h.parkster.current = zoePlate
+	h.parkster.current = defaultPlate
 	h.report(t, at("18:00").AddDate(0, 0, -1), work, "P")
 	h.evalAt(at("05:00"))
 	h.want(t, teslaPlate, "05:00")
@@ -166,7 +166,7 @@ func TestTeslaLeavesWorkBeforeMorningEnd(t *testing.T) {
 	h.want(t, teslaPlate, "parked at work")
 	h.report(t, at("08:30"), elsewhere, "P") // dropped off at work, then driven on
 	h.evalAt(at("08:30"))
-	h.want(t, zoePlate, "Tesla left work before MorningEnd")
+	h.want(t, defaultPlate, "Tesla left work before MorningEnd")
 }
 
 func TestNoSwitchBackAfterMorningEnd(t *testing.T) {
@@ -199,7 +199,7 @@ func TestNothingBeforeMorningStartOrOnWeekend(t *testing.T) {
 
 func TestStaleTelemetryFallsBackToSchedule(t *testing.T) {
 	h := newHarness(t)
-	h.parkster.current = zoePlate
+	h.parkster.current = defaultPlate
 	h.report(t, at("05:00").Add(-100*time.Hour), home, "P")
 	h.evalAt(at("05:00"))
 	h.want(t, teslaPlate, "schedule says Tesla on Tuesdays")
@@ -223,7 +223,7 @@ func TestParksterErrorIsRetried(t *testing.T) {
 	}
 	h.parkster.err = nil
 	h.evalAt(at("05:03"))
-	h.want(t, zoePlate, "after retry")
+	h.want(t, defaultPlate, "after retry")
 }
 
 func TestOlderDataDoesNotOverwrite(t *testing.T) {
