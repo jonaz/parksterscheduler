@@ -19,9 +19,10 @@ var (
 )
 
 type fakeParkster struct {
-	current string
-	calls   []string
-	err     error
+	current   string
+	calls     []string
+	err       error // fails without changing the car
+	verifyErr error // changes the car, then fails verification
 }
 
 func (f *fakeParkster) EnsureCar(plate string) (string, bool, error) {
@@ -31,6 +32,9 @@ func (f *fakeParkster) EnsureCar(plate string) (string, bool, error) {
 	}
 	prev := f.current
 	f.current = plate
+	if f.verifyErr != nil {
+		return prev, false, f.verifyErr
+	}
 	return prev, prev != plate, nil
 }
 
@@ -224,6 +228,45 @@ func TestParksterErrorIsRetried(t *testing.T) {
 	h.parkster.err = nil
 	h.evalAt(at("05:03"))
 	h.want(t, defaultPlate, "after retry")
+}
+
+func TestNoSwitchBackAfterMorningEndSurvivesRestart(t *testing.T) {
+	h := newHarness(t)
+	h.report(t, at("07:40"), work, "P")
+	h.evalAt(at("07:40"))
+	h.want(t, teslaPlate, "parked at work")
+
+	// Restart: a new controller on the same state file.
+	store, err := loadStore(h.store.path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h.store = store
+	h.ctrl = NewController(testConfig(t), store, Schedule{}, h.parkster, h.notify)
+	h.ctrl.now = func() time.Time { return h.now }
+
+	h.report(t, at("12:00"), elsewhere, "P") // lunch
+	h.evalAt(at("12:00"))
+	h.want(t, teslaPlate, "after restart, past MorningEnd")
+}
+
+func TestFailedVerificationForgetsConfirmedPlate(t *testing.T) {
+	h := newHarness(t)
+	h.report(t, at("04:00"), home, "P")
+	h.evalAt(at("05:00"))
+	h.want(t, defaultPlate, "Tesla at home")
+
+	// The Tesla arrives at work; the change goes through but verification fails.
+	h.parkster.verifyErr = errors.New("verify: timeout")
+	h.report(t, at("07:40"), work, "P")
+	h.evalAt(at("07:40"))
+	h.want(t, teslaPlate, "change went through")
+	h.parkster.verifyErr = nil
+
+	// It leaves before MorningEnd: the default car must go back on.
+	h.report(t, at("08:30"), elsewhere, "P")
+	h.evalAt(at("08:30"))
+	h.want(t, defaultPlate, "Tesla left before MorningEnd")
 }
 
 func TestOlderDataDoesNotOverwrite(t *testing.T) {

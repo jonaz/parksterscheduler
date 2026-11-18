@@ -35,10 +35,26 @@ type Controller struct {
 }
 
 func NewController(cfg *Config, store *Store, schedule Schedule, parkster CarSetter, notify Notifier) *Controller {
-	return &Controller{
+	c := &Controller{
 		cfg: cfg, store: store, schedule: schedule, parkster: parkster, notify: notify,
 		now:     time.Now,
 		trigger: make(chan struct{}, 1),
+	}
+	if store != nil {
+		st := store.Snapshot()
+		c.confirmedDay, c.confirmedPlate = st.ConfirmedDay, st.ConfirmedPlate
+	}
+	return c
+}
+
+// setConfirmed updates the confirmed plate and persists it when there is a store.
+func (c *Controller) setConfirmed(day, plate string) {
+	c.confirmedDay, c.confirmedPlate = day, plate
+	if c.store == nil {
+		return
+	}
+	if err := c.store.SetConfirmed(day, plate); err != nil {
+		log.Printf("❌ Could not save confirmed plate: %v", err)
 	}
 }
 
@@ -136,9 +152,12 @@ func (c *Controller) Evaluate() {
 	previous, changed, err := c.parkster.EnsureCar(d.Plate)
 	if err != nil {
 		c.notify.Error(fmt.Sprintf("Could not set %s on Parkster (%s): %v", d.Plate, d.Reason, err))
+		// The change may have gone through even though verification failed, so we
+		// no longer know which plate is on the permit.
+		c.setConfirmed("", "")
 		return
 	}
-	c.confirmedDay, c.confirmedPlate = day, d.Plate
+	c.setConfirmed(day, d.Plate)
 	if changed {
 		c.notify.Info(fmt.Sprintf("Parkster switched from %s to %s: %s.", previous, d.Plate, d.Reason))
 	} else {

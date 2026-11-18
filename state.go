@@ -18,6 +18,11 @@ type VehicleState struct {
 	LocationAt time.Time `json:"locationAt"` // zero if no location received yet
 	Gear       string    `json:"gear"`       // P, R, N, D or "" if unknown
 	GearAt     time.Time `json:"gearAt"`     //
+
+	// The plate the controller last confirmed on the permit, and the local date it
+	// applies to. Persisted so the same-day Tesla hold survives restarts.
+	ConfirmedDay   string `json:"confirmedDay,omitempty"`
+	ConfirmedPlate string `json:"confirmedPlate,omitempty"`
 }
 
 // TelemetryUpdate is the subset of a telemetry payload we care about.
@@ -71,6 +76,15 @@ func (s *Store) Apply(u TelemetryUpdate) error {
 	if u.Gear != "" && !u.At.Before(s.st.GearAt) {
 		s.st.Gear, s.st.GearAt = u.Gear, u.At
 	}
+	return s.save()
+}
+
+// SetConfirmed records which plate the controller has confirmed on the permit
+// for the given day. An empty plate clears it.
+func (s *Store) SetConfirmed(day, plate string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.st.ConfirmedDay, s.st.ConfirmedPlate = day, plate
 	return s.save()
 }
 
